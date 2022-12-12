@@ -1,0 +1,91 @@
+shopt -s nullglob
+
+flag="-Og"
+delete="false"
+making="false"
+existing="false"
+
+for var in "$@"
+do
+	if [ "${var}" = "-r" ]
+	then 
+		flag="-O3"
+	fi
+	
+	if [ "${var}" = "-c" ]
+	then
+		delete="true"
+	fi
+	
+	if [ "${var}" = "-m" ]
+	then
+		making="true"
+	fi
+done
+
+for var in "$@"
+do
+	if [ "$var" = "-r" ] || [ "$var" = "-c" ] || [ "$var" = "-m" ]
+	then
+		continue
+	fi
+	
+	
+	
+	changed="false"
+	
+	
+	if [ "$making" = "true" ]
+	then
+		mkdir "Day_${var}"
+		cd "./Day_${var}"
+		
+		mkdir src obj include
+		touch input.txt
+	else
+		
+		cd "./Day_${var}"
+		
+		if [ "$delete" = "true" ]
+		then
+			rm ./obj/*
+		fi
+			
+		
+		for FILE in ./src/*
+		do
+			existing="true"
+			
+			
+			name=$(basename ${FILE} .c)
+			
+			compiled=""
+			if test -f ./obj/${name}.o 
+			then
+				compiled=$(stat -c "%Y" ./obj/${name}.o)
+			fi
+			
+			edited=$(stat -c "%Y" ./src/${name}.c)
+			
+			if [ "$compiled" = "" ] || [ $(($edited-$compiled)) -gt 0 ]
+			then
+				gcc -std=c17 -c -Wall $flag ./src/${name}.c -I ./include/ -o ./obj/${name}.o
+				changed="true"
+			fi
+		done
+		
+		if [ "$changed" = "true" ]
+		then
+			gcc -Og ./obj/*.o -o ./day${var}
+		fi
+		
+		if [ "$?" = 0 ] && [ "$existing" = "true" ]
+		then
+			echo "Day ${var}:"
+			./day${var}
+			echo
+		fi
+		
+		cd ..
+	fi
+done
